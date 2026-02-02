@@ -1,8 +1,13 @@
 import { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
-import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
+
+// Dynamic import for bcrypt to avoid edge runtime issues
+async function comparePassword(password: string, hash: string): Promise<boolean> {
+  const bcrypt = await import("bcryptjs")
+  return bcrypt.compare(password, hash)
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as NextAuthOptions["adapter"],
@@ -26,7 +31,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials")
         }
 
-        const isValid = await bcrypt.compare(credentials.password, user.password)
+        const isValid = await comparePassword(credentials.password, user.password)
 
         if (!isValid) {
           throw new Error("Invalid credentials")
